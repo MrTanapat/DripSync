@@ -164,7 +164,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "E:\\sandbox\\dripsync\\generated\\prisma",
+      "value": "D:\\SandBox\\DripSync\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -178,12 +178,11 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "E:\\sandbox\\dripsync\\prisma\\schema.prisma",
+    "sourceFilePath": "D:\\SandBox\\DripSync\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null,
-    "schemaEnvPath": "../../.env"
+    "rootEnvPath": null
   },
   "relativePath": "../../prisma",
   "clientVersion": "6.19.3",
@@ -192,6 +191,7 @@ const config = {
     "db"
   ],
   "activeProvider": "sqlite",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
