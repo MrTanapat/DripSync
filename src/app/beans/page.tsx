@@ -34,7 +34,7 @@ export default async function BeansPage() {
       {beans.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-stone-200 py-16 text-center text-stone-400">
           <p className="text-lg">ยังไม่มีเมล็ดกาแฟในคลัง</p>
-          <p className="mt-1 text-sm">กดปุ่ม "เพิ่มเมล็ดใหม่" เพื่อเริ่มต้น</p>
+          <p className="mt-1 text-sm">กดปุ่ม เพิ่มเมล็ดใหม่ เพื่อเริ่มต้น</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
