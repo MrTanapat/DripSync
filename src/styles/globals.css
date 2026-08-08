@@ -3,4 +3,25 @@
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* Minimal coffee-inspired palette */
+  --color-cream-50: #fdfbf8;
+  --color-cream-100: #faf6f0;
+  --color-cream-200: #f3ebdf;
+
+  --color-coffee-50: #f5efe6;
+  --color-coffee-100: #eadfcf;
+  --color-coffee-200: #d8c3a5;
+  --color-coffee-300: #c4a47c;
+  --color-coffee-400: #a8825a;
+  --color-coffee-500: #8b6844;
+  --color-coffee-600: #6f4e37;
+  --color-coffee-700: #5a3e2b;
+  --color-coffee-800: #452f20;
+  --color-coffee-900: #2c1d14;
+}
+
+body {
+  background-color: var(--color-cream-50);
+  color: var(--color-coffee-900);
 }

@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { auth } from "~/server/auth";
-import BeansView from "./BeansView";
+import BrewView from "./BrewView";
 
-export default async function BeansPage() {
+export default async function BrewPage() {
   const session = await auth();
   if (!session) redirect("/api/auth/signin");
 
-  return <BeansView />;
+  return <BrewView />;
 }

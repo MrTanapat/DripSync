@@ -1,4 +1,5 @@
 import { beanRouter } from "~/server/api/routers/bean";
+import { brewRouter } from "~/server/api/routers/brew";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -8,6 +9,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   bean: beanRouter,
+  brew: brewRouter,
 });
 
 // export type definition of API
