@@ -1,9 +1,15 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 
 export const brewRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.session?.user?.id) {
+      return ctx.db.brewLog.findMany({
+        include: { bean: { select: { name: true, roaster: true } } },
+        orderBy: { createdAt: "desc" },
+      });
+    }
     return ctx.db.brewLog.findMany({
       where: { bean: { userId: ctx.session.user.id } },
       include: { bean: { select: { name: true, roaster: true } } },

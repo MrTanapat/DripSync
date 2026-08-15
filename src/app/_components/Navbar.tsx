@@ -5,12 +5,6 @@ import { usePathname } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 
-const MARKETING_LINKS = [
-  { href: "#features", label: "ฟีเจอร์" },
-  { href: "#origins", label: "จุดกำเนิดเมล็ด" },
-  { href: "#plans", label: "แพ็กเกจ" },
-] as const;
-
 const SCROLL_THRESHOLD = 24;
 
 export default function Navbar() {
@@ -21,7 +15,6 @@ export default function Navbar() {
 
   const isBeansActive = pathname?.startsWith("/beans");
   const isBrewActive = pathname?.startsWith("/brew");
-  const onHome = pathname === "/";
 
   useEffect(() => {
     function onScroll() {
@@ -54,43 +47,28 @@ export default function Navbar() {
             <span className="text-lg font-bold tracking-tight text-stone-900">DripSync</span>
           </Link>
 
-          {/* Center nav */}
+          {/* Center nav — ทั้ง Guest และ User เห็นได้ */}
           <nav className="hidden items-center gap-1 md:flex">
-            {session ? (
-              <>
-                <Link
-                  href="/beans"
-                  aria-current={isBeansActive ? "page" : undefined}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${isBeansActive
-                    ? "bg-amber-600 text-white shadow-sm"
-                    : "text-stone-600 hover:bg-white/70 hover:text-stone-900 hover:shadow-sm"
-                    }`}
-                >
-                  Beans
-                </Link>
-                <Link
-                  href="/brew"
-                  aria-current={isBrewActive ? "page" : undefined}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${isBrewActive
-                    ? "bg-amber-600 text-white shadow-sm"
-                    : "text-stone-600 hover:bg-white/70 hover:text-stone-900 hover:shadow-sm"
-                    }`}
-                >
-                  Brew
-                </Link>
-              </>
-            ) : (
-              onHome &&
-              MARKETING_LINKS.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="rounded-full px-4 py-2 text-sm font-medium text-stone-600 transition-all duration-200 hover:bg-white/70 hover:text-stone-900"
-                >
-                  {link.label}
-                </a>
-              ))
-            )}
+            <Link
+              href="/beans"
+              aria-current={isBeansActive ? "page" : undefined}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${isBeansActive
+                ? "bg-amber-600 text-white shadow-sm"
+                : "text-stone-600 hover:bg-white/70 hover:text-stone-900 hover:shadow-sm"
+                }`}
+            >
+              เมล็ดกาแฟ
+            </Link>
+            <Link
+              href="/brew"
+              aria-current={isBrewActive ? "page" : undefined}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${isBrewActive
+                ? "bg-amber-600 text-white shadow-sm"
+                : "text-stone-600 hover:bg-white/70 hover:text-stone-900 hover:shadow-sm"
+                }`}
+            >
+              ประวัติการดริป
+            </Link>
           </nav>
 
           {/* Desktop right */}
@@ -99,11 +77,21 @@ export default function Navbar() {
               <div className="h-8 w-24 animate-pulse rounded-full bg-stone-200" />
             ) : session ? (
               <>
+                {session.user.image && (
+                  <img
+                    src={session.user.image}
+                    alt="avatar"
+                    className="h-7 w-7 rounded-full ring-2 ring-white/60"
+                  />
+                )}
+                <span className="max-w-[8rem] truncate text-sm font-medium text-stone-700">
+                  {session.user.name}
+                </span>
                 <button
                   onClick={() => void signOut()}
                   className="rounded-full border border-stone-200/80 bg-white/60 px-4 py-2 text-sm font-medium text-stone-700 backdrop-blur-sm transition-all duration-200 hover:border-stone-300 hover:bg-white/90 hover:text-stone-900"
                 >
-                  Logout
+                  ออกจากระบบ
                 </button>
               </>
             ) : (
@@ -111,7 +99,7 @@ export default function Navbar() {
                 onClick={() => void signIn("google")}
                 className="rounded-full bg-stone-900 px-5 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-stone-700"
               >
-                Login
+                เข้าสู่ระบบ
               </button>
             )}
           </div>
@@ -153,18 +141,23 @@ export default function Navbar() {
           <div id="mobile-menu" className="mt-3 border-t border-white/40 pt-3 md:hidden">
             {status === "loading" ? (
               <div className="h-9 animate-pulse rounded-full bg-stone-200" />
-            ) : session ? (
+            ) : (
               <div className="flex flex-col gap-2 pb-2">
-                <div className="flex items-center gap-2 px-2 py-1">
-                  {session.user.image && (
-                    <img
-                      src={session.user.image}
-                      alt="avatar"
-                      className="h-6 w-6 rounded-full"
-                    />
-                  )}
-                  <p className="text-sm font-medium text-stone-700">{session.user.name}</p>
-                </div>
+                {/* แสดง user info ถ้า login */}
+                {session && (
+                  <div className="flex items-center gap-2 px-2 py-1">
+                    {session.user.image && (
+                      <img
+                        src={session.user.image}
+                        alt="avatar"
+                        className="h-6 w-6 rounded-full"
+                      />
+                    )}
+                    <p className="text-sm font-medium text-stone-700">{session.user.name}</p>
+                  </div>
+                )}
+
+                {/* Nav links — ทั้ง Guest และ User เห็นได้ */}
                 <Link
                   href="/beans"
                   onClick={closeMenu}
@@ -173,7 +166,7 @@ export default function Navbar() {
                     : "text-stone-600 hover:bg-white/60 hover:text-stone-900"
                     }`}
                 >
-                  ☕ Beans
+                  ☕ เมล็ดกาแฟ
                 </Link>
                 <Link
                   href="/brew"
@@ -183,40 +176,25 @@ export default function Navbar() {
                     : "text-stone-600 hover:bg-white/60 hover:text-stone-900"
                     }`}
                 >
-                  🫗 Brew
+                  🫗 ประวัติการดริป
                 </Link>
-                <button
-                  onClick={() => {
-                    closeMenu();
-                    void signOut();
-                  }}
-                  className="w-full rounded-full border border-stone-200/80 bg-white/60 px-4 py-2.5 text-sm font-medium text-stone-700"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 pb-2">
-                {onHome &&
-                  MARKETING_LINKS.map((link) => (
-                    <a
-                      key={link.href}
-                      href={link.href}
-                      onClick={closeMenu}
-                      className="rounded-full px-3 py-2.5 text-sm font-medium text-stone-600 hover:bg-white/60 hover:text-stone-900"
-                    >
-                      {link.label}
-                    </a>
-                  ))}
-                <button
-                  onClick={() => {
-                    closeMenu();
-                    void signIn("google");
-                  }}
-                  className="w-full rounded-full bg-stone-900 px-4 py-2.5 text-sm font-semibold text-white"
-                >
-                  Google Login
-                </button>
+
+                {/* Login / Logout */}
+                {session ? (
+                  <button
+                    onClick={() => { closeMenu(); void signOut(); }}
+                    className="w-full rounded-full border border-stone-200/80 bg-white/60 px-4 py-2.5 text-sm font-medium text-stone-700"
+                  >
+                    ออกจากระบบ
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { closeMenu(); void signIn("google"); }}
+                    className="w-full rounded-full bg-stone-900 px-4 py-2.5 text-sm font-semibold text-white"
+                  >
+                    เข้าสู่ระบบด้วย Google
+                  </button>
+                )}
               </div>
             )}
           </div>

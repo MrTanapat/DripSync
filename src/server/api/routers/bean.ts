@@ -1,12 +1,30 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 
 export const beanRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.session?.user?.id) {
+      return ctx.db.bean.findMany({ orderBy: { createdAt: "desc" } });
+    }
     return ctx.db.bean.findMany({
       where: { userId: ctx.session.user.id },
       orderBy: { createdAt: "desc" },
     });
+  }),
+
+  getStats: publicProcedure.query(async ({ ctx }) => {
+    const where = ctx.session?.user?.id
+      ? { userId: ctx.session.user.id }
+      : {};
+    const beans = await ctx.db.bean.findMany({
+      where,
+      select: { weight: true, isFinished: true },
+    });
+    const totalWeight = beans.reduce((sum, b) => sum + b.weight, 0);
+    const totalBeans = beans.length;
+    const lowStock = beans.filter((b) => !b.isFinished && b.weight < 50).length;
+    const outOfStock = beans.filter((b) => b.isFinished).length;
+    return { totalWeight, totalBeans, lowStock, outOfStock };
   }),
 
   create: protectedProcedure

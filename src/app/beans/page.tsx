@@ -1,10 +1,5 @@
-import { redirect } from "next/navigation";
-import { auth } from "~/server/auth";
 import BeansView from "./BeansView";
 
-export default async function BeansPage() {
-  const session = await auth();
-  if (!session) redirect("/api/auth/signin");
-
+export default function BeansPage() {
   return <BeansView />;
 }
