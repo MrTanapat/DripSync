@@ -19,7 +19,7 @@ export default function RootLayout({
         <SessionProvider>
           <TRPCReactProvider>
             <Navbar />
-            <div className="pt-[72px]">{children}</div>
+            <div>{children}</div>
           </TRPCReactProvider>
         </SessionProvider>
       </body>

@@ -3,51 +3,33 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
-
-const SCROLL_THRESHOLD = 24;
+import { useState } from "react";
 
 export default function Navbar() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
 
   const isBeansActive = pathname?.startsWith("/beans");
   const isBrewActive = pathname?.startsWith("/brew");
-
-  useEffect(() => {
-    function onScroll() {
-      setScrolled(window.scrollY > SCROLL_THRESHOLD);
-    }
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   function closeMenu() {
     setMenuOpen(false);
   }
 
   return (
-    <div
-      className={`pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center transition-[padding] duration-300 ease-out ${scrolled ? "px-4 pt-3" : "px-0 pt-0"
-        }`}
-    >
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-3">
       <header
-        className={`pointer-events-auto w-full transition-all duration-300 ease-out ${menuOpen ? "rounded-3xl" : scrolled ? "rounded-full" : "rounded-none"
-          } ${scrolled
-            ? "max-w-3xl border border-white/50 bg-white/60 shadow-[0_8px_30px_rgba(78,52,46,0.12)] backdrop-blur-xl backdrop-saturate-150"
-            : "max-w-none border border-transparent bg-white/0"
-          } px-5 py-2.5`}
+        className={`pointer-events-auto w-full max-w-3xl transition-all duration-300 ease-out ${menuOpen ? "rounded-3xl" : "rounded-full"
+          } border border-white/50 bg-white/60 px-5 py-2.5 shadow-[0_8px_30px_rgba(78,52,46,0.12)] backdrop-blur-xl backdrop-saturate-150`}
       >
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
+        <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" onClick={closeMenu} className="flex items-center gap-2.5">
             <span className="text-lg font-bold tracking-tight text-stone-900">DripSync</span>
           </Link>
 
-          {/* Center nav — ทั้ง Guest และ User เห็นได้ */}
+          {/* Center nav */}
           <nav className="hidden items-center gap-1 md:flex">
             <Link
               href="/beans"
@@ -143,7 +125,6 @@ export default function Navbar() {
               <div className="h-9 animate-pulse rounded-full bg-stone-200" />
             ) : (
               <div className="flex flex-col gap-2 pb-2">
-                {/* แสดง user info ถ้า login */}
                 {session && (
                   <div className="flex items-center gap-2 px-2 py-1">
                     {session.user.image && (
@@ -156,8 +137,6 @@ export default function Navbar() {
                     <p className="text-sm font-medium text-stone-700">{session.user.name}</p>
                   </div>
                 )}
-
-                {/* Nav links — ทั้ง Guest และ User เห็นได้ */}
                 <Link
                   href="/beans"
                   onClick={closeMenu}
@@ -178,8 +157,6 @@ export default function Navbar() {
                 >
                   🫗 ประวัติการดริป
                 </Link>
-
-                {/* Login / Logout */}
                 {session ? (
                   <button
                     onClick={() => { closeMenu(); void signOut(); }}

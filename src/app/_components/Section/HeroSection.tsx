@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { type Session } from "next-auth";
+import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
 import { Package, Coffee, AlertTriangle, PackageX } from "lucide-react";
 
-export default function HeroSection({ session }: { session: Session | null }) {
-    const { data: stats } = api.bean.getStats.useQuery(undefined, {
-        enabled: !!session,
-    });
+export default function HeroSection() {
+    const { data: session } = useSession();
+    const { data: stats } = api.bean.getStats.useQuery();
 
     return (
         <div className="bg-white">

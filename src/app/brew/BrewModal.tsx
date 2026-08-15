@@ -113,7 +113,7 @@ export default function BrewModal({
 
   const availableBeans = useMemo(() => {
     if (!beans) return [];
-    const list = beans.filter((b) => !b.isFinished);
+    const list = beans.filter((b) => !b.isFinished && b.weight > 0);
     if (log && !list.some((b) => b.id === log.beanId)) {
       const current = beans.find((b) => b.id === log.beanId);
       if (current) list.unshift(current);
