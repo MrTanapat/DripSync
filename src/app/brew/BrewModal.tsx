@@ -87,6 +87,11 @@ export default function BrewModal({
 }) {
   const isEdit = !!log;
   const [form, setForm] = useState<FormState>(log ? formFromLog(log) : emptyForm());
+  useEffect(() => {
+    if (log) {
+      setForm(formFromLog(log));
+    }
+  }, [log]);
 
   const { data: beans } = api.bean.getAll.useQuery();
   const utils = api.useUtils();
