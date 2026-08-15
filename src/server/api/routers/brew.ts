@@ -1,9 +1,15 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 
 export const brewRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.session?.user?.id) {
+      return ctx.db.brewLog.findMany({
+        include: { bean: { select: { name: true, roaster: true } } },
+        orderBy: { createdAt: "desc" },
+      });
+    }
     return ctx.db.brewLog.findMany({
       where: { bean: { userId: ctx.session.user.id } },
       include: { bean: { select: { name: true, roaster: true } } },
@@ -12,21 +18,22 @@ export const brewRouter = createTRPCRouter({
   }),
 
   create: protectedProcedure
-    .input(
-      z.object({
-        beanId:     z.string(),
-        coffeeDose: z.number().positive(),
-        waterYield: z.number().positive(),
-        waterTemp:  z.number().positive(),
-        grindSize:  z.string().min(1, "กรุณาระบุเบอร์บด"),
-        pours:      z.array(z.number().int().nonnegative()).default([]),
-        brewTime:   z.number().int().positive(),
-        method:     z.string().min(1, "กรุณาระบุวิธีดริป"),
-        brewDate:   z.coerce.date(),
-        rating:     z.number().int().min(1).max(5),
-        notes:      z.string().optional(),
-      })
-    )
+  .input(
+    z.object({
+      beanId:     z.string(),
+      coffeeDose: z.number().positive(),
+      waterYield: z.number().positive(),
+      waterTemp:  z.number().positive(),
+      grindSize:  z.string().min(1, "กรุณาระบุเบอร์บด"),
+      pours:      z.array(z.number().int().nonnegative()).default([]),
+      pourGrams:  z.array(z.number().nonnegative()).default([]),  // เพิ่ม
+      brewTime:   z.number().int().positive(),
+      method:     z.string().min(1, "กรุณาระบุวิธีดริป"),
+      brewDate:   z.coerce.date(),
+      rating:     z.number().int().min(1).max(5),
+      notes:      z.string().optional(),
+    })
+  )
     .mutation(async ({ ctx, input }) => {
       const bean = await ctx.db.bean.findFirst({
         where: { id: input.beanId, userId: ctx.session.user.id },
@@ -52,22 +59,23 @@ export const brewRouter = createTRPCRouter({
     }),
 
   update: protectedProcedure
-    .input(
-      z.object({
-        id:         z.string(),
-        beanId:     z.string().optional(),
-        coffeeDose: z.number().positive().optional(),
-        waterYield: z.number().positive().optional(),
-        waterTemp:  z.number().positive().optional(),
-        grindSize:  z.string().min(1).optional(),
-        pours:      z.array(z.number().int().nonnegative()).optional(),
-        brewTime:   z.number().int().positive().optional(),
-        method:     z.string().min(1).optional(),
-        brewDate:   z.coerce.date().optional(),
-        rating:     z.number().int().min(1).max(5).optional(),
-        notes:      z.string().optional(),
-      })
-    )
+  .input(
+    z.object({
+      id:         z.string(),
+      beanId:     z.string().optional(),
+      coffeeDose: z.number().positive().optional(),
+      waterYield: z.number().positive().optional(),
+      waterTemp:  z.number().positive().optional(),
+      grindSize:  z.string().min(1).optional(),
+      pours:      z.array(z.number().int().nonnegative()).optional(),
+      pourGrams:  z.array(z.number().nonnegative()).optional(),  // เพิ่ม
+      brewTime:   z.number().int().positive().optional(),
+      method:     z.string().min(1).optional(),
+      brewDate:   z.coerce.date().optional(),
+      rating:     z.number().int().min(1).max(5).optional(),
+      notes:      z.string().optional(),
+    })
+  )
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
 

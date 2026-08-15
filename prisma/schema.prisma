@@ -53,6 +53,7 @@ model BrewLog {
     waterTemp  Float
     grindSize  String
     pours      Int[]
+    pourGrams  Float[]
     brewTime   Int
     method     String
     brewDate   DateTime

@@ -1,20 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useSession, signIn } from "next-auth/react";
 import { api } from "~/trpc/react";
 import type { RouterOutputs } from "~/trpc/react";
 import BeanModal from "./BeanModal";
+import { Pencil, Trash2 } from "lucide-react";
 
-type Bean = RouterOutputs["bean"]["getAll"][number];
+type BeanItem = RouterOutputs["bean"]["getAll"][number];
 
 const ROAST_LABEL: Record<string, string> = {
   LIGHT: "Light",
   MEDIUM: "Medium",
-  MEDIUM_DARK: "Medium Dark",
+  MEDIUM_DARK: "Medium-Dark",
   DARK: "Dark",
 };
 
-const PROCESS_LABEL: Record<string, string> = {
+const ORIGIN_LABEL: Record<string, string> = {
   WASHED: "Washed",
   NATURAL: "Natural",
   HONEY: "Honey",
@@ -22,27 +24,19 @@ const PROCESS_LABEL: Record<string, string> = {
   OTHER: "Other",
 };
 
-function formatRoastDate(date: Date) {
-  return new Date(date).toLocaleDateString("th-TH", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 export default function BeansView() {
+  const { data: session } = useSession();
   const { data: beans, refetch } = api.bean.getAll.useQuery();
+  const { data: stats } = api.bean.getStats.useQuery();
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [modalState, setModalState] = useState<
-    { open: false } | { open: true; bean: Bean | null }
-  >({ open: false });
+  const [modalState, setModalState] = useState<{ open: false } | { open: true; bean: BeanItem | null }>({ open: false });
 
   const deleteBean = api.bean.delete.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => void refetch(),
   });
 
   const toggleFinished = api.bean.update.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => void refetch(),
   });
 
   function handleDelete(id: string) {
@@ -51,96 +45,135 @@ export default function BeansView() {
     deleteBean.mutate({ id });
   }
 
+  function getStockStatus(bean: BeanItem) {
+    if (bean.isFinished || bean.weight <= 0)
+      return { label: "หมดสต็อก", color: "text-red-500", dot: "bg-red-500" };
+    if (bean.weight < 50)
+      return { label: "ใกล้หมด", color: "text-amber-500", dot: "bg-amber-500" };
+    return { label: "พร้อมใช้", color: "text-green-600", dot: "bg-green-500" };
+  }
+
   return (
-    <main className="mx-auto max-w-4xl px-4 py-10">
+    <main className="mx-auto max-w-5xl px-4 py-10">
+      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-coffee-900">Coffee Beans</h1>
-        <button
-          onClick={() => setModalState({ open: true, bean: null })}
-          className="rounded-lg bg-coffee-600 px-4 py-2 text-sm font-medium text-cream-50 hover:bg-coffee-700"
-        >
-          + Add Bean
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-coffee-900">
+            <span className="text-lg">☕</span>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-coffee-900">คลังเมล็ดกาแฟ</h1>
+            <p className="text-sm text-coffee-400">ดูและจัดการเมล็ดกาแฟทั้งหมด</p>
+          </div>
+        </div>
+        {session ? (
+          <button
+            onClick={() => setModalState({ open: true, bean: null })}
+            className="flex items-center gap-2 rounded-xl bg-coffee-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-coffee-800"
+          >
+            + เพิ่ม
+          </button>
+        ) : (
+          <button
+            onClick={() => void signIn("google")}
+            className="rounded-xl border border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50"
+          >
+            เข้าสู่ระบบเพื่อเพิ่มเมล็ด
+          </button>
+        )}
       </div>
 
+      {/* Stats */}
+      {stats && (
+        <div className="mb-6 grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-stone-100 bg-white p-4">
+            <p className="text-xs text-stone-400">ปริมาณรวม</p>
+            <p className="mt-1 text-2xl font-bold text-stone-900">
+              {(stats.totalWeight / 1000).toFixed(2)} kg
+            </p>
+          </div>
+          <div className="rounded-xl border border-amber-100 bg-white p-4">
+            <p className="text-xs text-amber-500">ใกล้หมด</p>
+            <p className="mt-1 text-2xl font-bold text-amber-500">
+              {stats.lowStock} รายการ
+            </p>
+          </div>
+          <div className="rounded-xl border border-red-100 bg-white p-4">
+            <p className="text-xs text-red-500">หมดสต็อก</p>
+            <p className="mt-1 text-2xl font-bold text-red-500">
+              {stats.outOfStock} รายการ
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
       {!beans || beans.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-coffee-200 py-16 text-center text-coffee-400">
-          <p className="text-lg">dont have any coffee beans yet</p>
-          <p className="mt-1 text-sm">Click Add Bean to get started</p>
+        <div className="rounded-xl border-2 border-dashed border-stone-200 py-16 text-center text-stone-400">
+          <p className="text-lg">ยังไม่มีเมล็ดกาแฟในคลัง</p>
+          <p className="mt-1 text-sm">
+            {session ? "กดปุ่ม \"เพิ่ม\" เพื่อเริ่มต้น" : "เข้าสู่ระบบเพื่อเพิ่มเมล็ดกาแฟ"}
+          </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="overflow-hidden rounded-xl border border-stone-100 bg-white">
+          {/* Table header */}
+          <div className="grid grid-cols-[2fr_1fr_1fr_2fr_1fr_auto] gap-4 border-b border-stone-100 px-5 py-3">
+            {["ชื่อ", "โปรเซส", "ระดับคั่ว", "ปริมาณคงเหลือ", "สถานะ", ""].map((h) => (
+              <span key={h} className="text-xs font-medium text-stone-400">{h}</span>
+            ))}
+          </div>
+
+          {/* Table rows */}
           {beans.map((bean) => {
-            const costPerGram = bean.price / bean.weight;
+            const status = getStockStatus(bean);
+            const maxWeight = 1000;
+            const pct = Math.min((bean.weight / maxWeight) * 100, 100);
+            const barColor =
+              bean.isFinished || bean.weight <= 0
+                ? "bg-red-400"
+                : bean.weight < 50
+                  ? "bg-amber-400"
+                  : "bg-green-500";
+
             return (
               <div
                 key={bean.id}
-                className={`overflow-hidden rounded-xl border bg-white shadow-sm ${bean.isFinished ? "border-coffee-100 opacity-60" : "border-coffee-100"
-                  }`}
+                className="grid grid-cols-[2fr_1fr_1fr_2fr_1fr_auto] items-center gap-4 border-b border-stone-50 px-5 py-4 last:border-0 hover:bg-stone-50"
               >
-                {/* Image */}
-                {bean.imageUrl ? (
-                  <img
-                    src={bean.imageUrl}
-                    alt={bean.name}
-                    className="h-36 w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-36 w-full items-center justify-center bg-coffee-50 text-5xl">
-                    ☕
-                  </div>
-                )}
+                {/* ชื่อ */}
+                <div>
+                  <p className="font-semibold text-stone-900">{bean.name}</p>
+                  <p className="text-xs text-stone-400">{bean.roaster}</p>
+                </div>
 
-                <div className="p-4">
-                  {/* Header */}
-                  <div className="mb-2 flex items-start justify-between">
-                    <div>
-                      <h2 className="font-semibold text-coffee-900">{bean.name}</h2>
-                      <p className="text-sm text-coffee-500">{bean.roaster}</p>
-                    </div>
-                    {bean.isFinished && (
-                      <span className="rounded-full bg-coffee-50 px-2 py-0.5 text-xs text-coffee-400">
-                        หมดแล้ว
-                      </span>
-                    )}
-                  </div>
+                {/* โปรเซส */}
+                <span className="text-sm text-stone-500">
+                  {ORIGIN_LABEL[bean.process]}
+                </span>
 
-                  <p className="mb-3 text-xs text-coffee-400">
-                    คั่ว {formatRoastDate(bean.roastDate)}
+                {/* ระดับคั่ว */}
+                <span className="text-sm text-stone-500">
+                  {ROAST_LABEL[bean.roastLevel]}
+                </span>
+
+                {/* ปริมาณคงเหลือ */}
+                <div>
+                  <p className="mb-1 text-sm font-medium text-stone-700">
+                    {bean.weight} g
                   </p>
-
-                  {/* Taste Notes */}
-                  {bean.tasteNotes && (
-                    <p className="mb-3 text-xs italic text-coffee-400">"{bean.tasteNotes}"</p>
-                  )}
-
-                  {/* Tags */}
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    <span className="rounded-full bg-coffee-100 px-2 py-0.5 text-xs font-medium text-coffee-800">
-                      {ROAST_LABEL[bean.roastLevel]}
-                    </span>
-                    <span className="rounded-full border border-coffee-200 px-2 py-0.5 text-xs font-medium text-coffee-600">
-                      {PROCESS_LABEL[bean.process]}
-                    </span>
+                  <div className="h-1.5 w-full rounded-full bg-stone-100">
+                    <div
+                      className={`h-1.5 rounded-full ${barColor}`}
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
+                </div>
 
-                  {/* Stats */}
-                  <div className="border-t border-coffee-100 pt-3">
-                    <div className="flex justify-between text-sm text-coffee-600">
-                      <span>{bean.weight} g</span>
-                      <span>฿{bean.price.toLocaleString()}</span>
-                    </div>
-                    <div className="mt-2 rounded-lg bg-coffee-50 px-3 py-2 text-center">
-                      <p className="text-xs text-coffee-500">ต้นทุนต่อกรัม</p>
-                      <p className="text-lg font-bold text-coffee-700">
-                        ฿{costPerGram.toFixed(2)}
-                        <span className="text-xs font-normal">/g</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="mt-3 flex gap-2 border-t border-coffee-100 pt-3">
+                {/* สถานะ */}
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-2 w-2 rounded-full ${status.dot}`} />
+                  {session ? (
                     <button
                       onClick={() =>
                         toggleFinished.mutate({
@@ -148,25 +181,37 @@ export default function BeansView() {
                           isFinished: !bean.isFinished,
                         })
                       }
-                      className="flex-1 rounded-lg border border-coffee-100 py-1.5 text-xs text-coffee-500 hover:bg-coffee-50"
+                      className={`text-sm ${status.color} hover:underline`}
                     >
-                      {bean.isFinished ? "ยังมีอยู่" : "หมดแล้ว"}
+                      {status.label}
                     </button>
+                  ) : (
+                    <span className={`text-sm ${status.color}`}>
+                      {status.label}
+                    </span>
+                  )}
+                </div>
+
+                {/* จัดการ — เฉพาะ session */}
+                {session ? (
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => setModalState({ open: true, bean })}
-                      className="flex-1 rounded-lg border border-coffee-200 py-1.5 text-center text-xs text-coffee-600 hover:bg-coffee-50"
+                      className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
                     >
-                      แก้ไข
+                      <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(bean.id)}
                       disabled={deletingId === bean.id}
-                      className="flex-1 rounded-lg border border-red-200 py-1.5 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50"
+                      className="rounded-lg p-1.5 text-stone-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
                     >
-                      ลบ
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                </div>
+                ) : (
+                  <span />
+                )}
               </div>
             );
           })}

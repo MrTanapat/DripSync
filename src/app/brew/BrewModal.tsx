@@ -7,14 +7,8 @@ import type { RouterOutputs } from "~/trpc/react";
 type BrewLog = RouterOutputs["brew"]["getAll"][number];
 
 const DRIP_METHODS = [
-  "V60",
-  "Kalita Wave",
-  "Chemex",
-  "Aeropress",
-  "French Press",
-  "Origami",
-  "Syphon",
-  "Moka Pot",
+  "V60", "Kalita Wave", "Chemex", "Aeropress",
+  "French Press", "Origami", "Syphon", "Moka Pot",
 ] as const;
 
 function todayISO() {
@@ -32,15 +26,18 @@ function secondsToMinSec(totalSeconds: number) {
   };
 }
 
+// Pour แต่ละครั้งมี 2 ค่า
+type Pour = {
+  grams: string;   // กี่กรัม
+  waitUntil: string; // รอถึงวินาทีที่เท่าไหร่
+};
+
 type FormState = {
   beanId: string;
   coffeeDose: string;
-  waterYield: string;
   waterTemp: string;
   grindSize: string;
-  pours: string[];
-  brewMinutes: string;
-  brewSeconds: string;
+  pours: Pour[];
   method: string;
   brewDate: string;
   rating: number;
@@ -49,36 +46,35 @@ type FormState = {
 
 function emptyForm(): FormState {
   return {
-    beanId:      "",
-    coffeeDose:  "",
-    waterYield:  "",
-    waterTemp:   "",
-    grindSize:   "",
-    pours:       [""],
-    brewMinutes: "",
-    brewSeconds: "",
-    method:      "",
-    brewDate:    todayISO(),
-    rating:      3,
-    notes:       "",
+    beanId: "",
+    coffeeDose: "",
+    waterTemp: "",
+    grindSize: "",
+    pours: [{ grams: "", waitUntil: "" }],
+    method: "",
+    brewDate: todayISO(),
+    rating: 3,
+    notes: "",
   };
 }
 
 function formFromLog(log: BrewLog): FormState {
-  const { minutes, seconds } = secondsToMinSec(log.brewTime);
+  // reconstruct pours จาก log.pours (วินาที) และ log.pourGrams (กรัม)
+  const pours: Pour[] = log.pours.map((waitUntil, i) => ({
+    grams: String(log.pourGrams?.[i] ?? ""),
+    waitUntil: String(waitUntil),
+  }));
+
   return {
-    beanId:      log.beanId,
-    coffeeDose:  String(log.coffeeDose),
-    waterYield:  String(log.waterYield),
-    waterTemp:   String(log.waterTemp),
-    grindSize:   log.grindSize,
-    pours:       log.pours.length > 0 ? log.pours.map(String) : [""],
-    brewMinutes: String(minutes),
-    brewSeconds: String(seconds),
-    method:      log.method,
-    brewDate:    toDateInputValue(log.brewDate),
-    rating:      log.rating,
-    notes:       log.notes ?? "",
+    beanId: log.beanId,
+    coffeeDose: String(log.coffeeDose),
+    waterTemp: String(log.waterTemp),
+    grindSize: log.grindSize,
+    pours: pours.length > 0 ? pours : [{ grams: "", waitUntil: "" }],
+    method: log.method,
+    brewDate: toDateInputValue(log.brewDate),
+    rating: log.rating,
+    notes: log.notes ?? "",
   };
 }
 
@@ -91,9 +87,29 @@ export default function BrewModal({
 }) {
   const isEdit = !!log;
   const [form, setForm] = useState<FormState>(log ? formFromLog(log) : emptyForm());
+  useEffect(() => {
+    if (log) {
+      setForm(formFromLog(log));
+    }
+  }, [log]);
 
   const { data: beans } = api.bean.getAll.useQuery();
   const utils = api.useUtils();
+
+  // คำนวณ waterYield และ brewTime อัตโนมัติ
+  const waterYield = useMemo(() => {
+    return form.pours
+      .map((p) => Number(p.grams))
+      .filter((n) => Number.isFinite(n) && n > 0)
+      .reduce((sum, n) => sum + n, 0);
+  }, [form.pours]);
+
+  const brewTime = useMemo(() => {
+    const last = form.pours[form.pours.length - 1];
+    return Number(last?.waitUntil) || 0;
+  }, [form.pours]);
+
+  const { minutes: brewMin, seconds: brewSec } = secondsToMinSec(brewTime);
 
   const availableBeans = useMemo(() => {
     if (!beans) return [];
@@ -135,41 +151,46 @@ export default function BrewModal({
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  function handlePourChange(index: number, value: string) {
+  function handlePourChange(index: number, field: keyof Pour, value: string) {
     setForm((prev) => ({
       ...prev,
-      pours: prev.pours.map((p, i) => (i === index ? value : p)),
+      pours: prev.pours.map((p, i) =>
+        i === index ? { ...p, [field]: value } : p
+      ),
     }));
   }
 
   function addPour() {
-    setForm((prev) => ({ ...prev, pours: [...prev.pours, ""] }));
+    setForm((prev) => ({
+      ...prev,
+      pours: [...prev.pours, { grams: "", waitUntil: "" }],
+    }));
   }
 
   function removePour(index: number) {
     setForm((prev) => ({
       ...prev,
-      pours: prev.pours.length <= 1 ? [""] : prev.pours.filter((_, i) => i !== index),
+      pours: prev.pours.length <= 1
+        ? [{ grams: "", waitUntil: "" }]
+        : prev.pours.filter((_, i) => i !== index),
     }));
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const totalSeconds =
-      (Number(form.brewMinutes) || 0) * 60 + (Number(form.brewSeconds) || 0);
-
     const data = {
-      beanId:     form.beanId,
+      beanId: form.beanId,
       coffeeDose: Number(form.coffeeDose),
-      waterYield: Number(form.waterYield),
-      waterTemp:  Number(form.waterTemp),
-      grindSize:  form.grindSize,
-      pours:      form.pours.map((p) => Number(p)).filter((n) => Number.isFinite(n) && n >= 0),
-      brewTime:   totalSeconds,
-      method:     form.method,
-      brewDate:   new Date(form.brewDate),
-      rating:     form.rating,
-      notes:      form.notes || undefined,
+      waterYield,
+      waterTemp: Number(form.waterTemp),
+      grindSize: form.grindSize,
+      pours: form.pours.map((p) => Number(p.waitUntil)),
+      pourGrams: form.pours.map((p) => Number(p.grams)),
+      brewTime,
+      method: form.method,
+      brewDate: new Date(form.brewDate),
+      rating: form.rating,
+      notes: form.notes || undefined,
     };
 
     if (isEdit && log) {
@@ -202,6 +223,7 @@ export default function BrewModal({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* เมล็ดกาแฟ */}
           <div>
             <label className="mb-1 block text-sm font-medium text-coffee-700">เมล็ดกาแฟ</label>
             <select
@@ -211,12 +233,10 @@ export default function BrewModal({
               required
               className="w-full rounded-lg border border-coffee-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-500"
             >
-              <option value="" disabled>
-                เลือกเมล็ดกาแฟ
-              </option>
+              <option value="" disabled>เลือกเมล็ดกาแฟ</option>
               {availableBeans.map((bean) => (
                 <option key={bean.id} value={bean.id}>
-                  {bean.name} — {bean.roaster} ({bean.weight} g เหลือ)
+                  {bean.name} — {bean.roaster} ({bean.weight}g)
                 </option>
               ))}
             </select>
@@ -225,7 +245,8 @@ export default function BrewModal({
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          {/* โดส + อุณหภูมิ */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1 block text-sm font-medium text-coffee-700">โดส (g)</label>
               <input
@@ -241,21 +262,7 @@ export default function BrewModal({
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-coffee-700">น้ำ (g)</label>
-              <input
-                name="waterYield"
-                type="number"
-                min="0.1"
-                step="0.1"
-                value={form.waterYield}
-                onChange={handleChange}
-                required
-                placeholder="300"
-                className="w-full rounded-lg border border-coffee-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-coffee-700">น้ำ (°C)</label>
+              <label className="mb-1 block text-sm font-medium text-coffee-700">อุณหภูมิน้ำ (°C)</label>
               <input
                 name="waterTemp"
                 type="number"
@@ -270,6 +277,7 @@ export default function BrewModal({
             </div>
           </div>
 
+          {/* เบอร์บด + วิธีดริป */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1 block text-sm font-medium text-coffee-700">เบอร์บด</label>
@@ -278,7 +286,7 @@ export default function BrewModal({
                 value={form.grindSize}
                 onChange={handleChange}
                 required
-                placeholder="เช่น Medium-Fine, คลิก 18"
+                placeholder="เช่น Medium-Fine"
                 className="w-full rounded-lg border border-coffee-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-500"
               />
             </div>
@@ -294,19 +302,15 @@ export default function BrewModal({
                 className="w-full rounded-lg border border-coffee-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-500"
               />
               <datalist id="drip-methods">
-                {DRIP_METHODS.map((m) => (
-                  <option key={m} value={m} />
-                ))}
+                {DRIP_METHODS.map((m) => <option key={m} value={m} />)}
               </datalist>
             </div>
           </div>
 
           {/* Pours */}
           <div>
-            <div className="mb-1 flex items-center justify-between">
-              <label className="block text-sm font-medium text-coffee-700">
-                พลัว (วินาทีที่เท)
-              </label>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="block text-sm font-medium text-coffee-700">พลัว</label>
               <button
                 type="button"
                 onClick={addPour}
@@ -315,64 +319,77 @@ export default function BrewModal({
                 + เพิ่มพลัว
               </button>
             </div>
+
+            {/* Header */}
+            <div className="mb-1 grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 px-1">
+              <span />
+              <span className="text-xs text-coffee-500">น้ำ (g)</span>
+              <span className="text-xs text-coffee-500">รอถึงวิที่</span>
+              <span />
+            </div>
+
             <div className="space-y-2">
               {form.pours.map((pour, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="w-16 shrink-0 text-xs text-coffee-500">พลัวที่ {i + 1}</span>
+                <div key={i} className="grid grid-cols-[2rem_1fr_1fr_2rem] items-center gap-2">
+                  <span className="text-center text-xs font-medium text-coffee-400">
+                    {i + 1}
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={pour.grams}
+                    onChange={(e) => handlePourChange(i, "grams", e.target.value)}
+                    placeholder="50"
+                    className="w-full rounded-lg border border-coffee-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-500"
+                  />
                   <input
                     type="number"
                     min="0"
                     step="1"
-                    value={pour}
-                    onChange={(e) => handlePourChange(i, e.target.value)}
-                    placeholder="วินาที"
+                    value={pour.waitUntil}
+                    onChange={(e) => handlePourChange(i, "waitUntil", e.target.value)}
+                    placeholder="45"
                     className="w-full rounded-lg border border-coffee-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-500"
                   />
-                  <span className="shrink-0 text-xs text-coffee-400">วิ</span>
                   <button
                     type="button"
                     onClick={() => removePour(i)}
                     aria-label="ลบพลัวนี้"
-                    className="shrink-0 rounded-full px-2 py-1 text-coffee-400 hover:bg-red-50 hover:text-red-500"
+                    className="rounded-full p-1 text-coffee-300 hover:bg-red-50 hover:text-red-500"
                   >
                     ✕
                   </button>
                 </div>
               ))}
             </div>
-          </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-coffee-700">เวลารวม</label>
-            <div className="flex items-center gap-2">
-              <input
-                name="brewMinutes"
-                type="number"
-                min="0"
-                step="1"
-                value={form.brewMinutes}
-                onChange={handleChange}
-                required
-                placeholder="3"
-                className="w-full rounded-lg border border-coffee-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-500"
-              />
-              <span className="shrink-0 text-sm text-coffee-500">นาที</span>
-              <input
-                name="brewSeconds"
-                type="number"
-                min="0"
-                max="59"
-                step="1"
-                value={form.brewSeconds}
-                onChange={handleChange}
-                required
-                placeholder="30"
-                className="w-full rounded-lg border border-coffee-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-500"
-              />
-              <span className="shrink-0 text-sm text-coffee-500">วินาที</span>
+            {/* Summary คำนวณอัตโนมัติ */}
+            <div className="mt-3 rounded-xl bg-coffee-50 px-4 py-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-coffee-600">น้ำรวม</span>
+                <span className="font-semibold text-coffee-900">
+                  {waterYield > 0 ? `${waterYield} g` : "—"}
+                </span>
+              </div>
+              <div className="mt-1 flex justify-between text-sm">
+                <span className="text-coffee-600">เวลารวม</span>
+                <span className="font-semibold text-coffee-900">
+                  {brewTime > 0 ? `${brewMin}:${String(brewSec).padStart(2, "0")} นาที` : "—"}
+                </span>
+              </div>
+              {waterYield > 0 && Number(form.coffeeDose) > 0 && (
+                <div className="mt-1 flex justify-between text-sm">
+                  <span className="text-coffee-600">Ratio</span>
+                  <span className="font-semibold text-coffee-900">
+                    1:{(waterYield / Number(form.coffeeDose)).toFixed(1)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
+          {/* วันที่ */}
           <div>
             <label className="mb-1 block text-sm font-medium text-coffee-700">วันที่ดริป</label>
             <input
@@ -386,6 +403,7 @@ export default function BrewModal({
             />
           </div>
 
+          {/* คะแนน */}
           <div>
             <label className="mb-1 block text-sm font-medium text-coffee-700">คะแนน</label>
             <div className="flex gap-1">
@@ -394,7 +412,8 @@ export default function BrewModal({
                   key={n}
                   type="button"
                   onClick={() => setForm((prev) => ({ ...prev, rating: n }))}
-                  className={`text-2xl ${n <= form.rating ? "text-coffee-600" : "text-coffee-200"}`}
+                  className={`text-2xl transition-colors ${n <= form.rating ? "text-coffee-600" : "text-coffee-200"
+                    }`}
                   aria-label={`${n} ดาว`}
                 >
                   ★
@@ -403,9 +422,10 @@ export default function BrewModal({
             </div>
           </div>
 
+          {/* Notes */}
           <div>
             <label className="mb-1 block text-sm font-medium text-coffee-700">
-              เทสโน้ตที่ได้ <span className="text-coffee-400">(ไม่บังคับ)</span>
+              เทสโน้ต <span className="text-coffee-400">(ไม่บังคับ)</span>
             </label>
             <textarea
               name="notes"
