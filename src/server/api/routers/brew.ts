@@ -42,6 +42,13 @@ export const brewRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "ไม่พบเมล็ดกาแฟนี้" });
       }
 
+      if (input.coffeeDose > bean.weight) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `เมล็ดกาแฟคงเหลือแค่ ${bean.weight}g ไม่พอสำหรับการชง ${input.coffeeDose}g`,
+        });
+      }
+
       const remainingWeight = Math.max(0, bean.weight - input.coffeeDose);
 
       const [brewLog] = await ctx.db.$transaction([

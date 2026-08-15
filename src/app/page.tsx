@@ -1,12 +1,9 @@
 import HeroSection from "./_components/Section/HeroSection";
-import { auth } from "~/server/auth";
 
-export default async function HomePage() {
-  const session = await auth();
-
+export default function HomePage() {
   return (
-    <main className="bg-cream-50">
-      <HeroSection session={session} />
+    <main className="min-h-screen bg-white">
+      <HeroSection />
     </main>
   );
 }
