@@ -1,29 +1,182 @@
-# Create T3 App
+# ☕ DripSync
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+ผมชอบดริปกาแฟและชอบลองเมล็ดใหม่ๆ แต่ไม่เคยมีที่จดว่าซื้อถุงไหนมา เหลือเท่าไหร่ ดริปแล้วเป็นยังไง
+DripSync เลยเกิดขึ้นมาเพื่อตอบโจทย์ตัวเองโดยตรง — ตั้งแต่ติดตามสต็อกเมล็ด คำนวณต้นทุนต่อกรัม ไปจนถึงบันทึกทุกครั้งที่ชงเพื่อดูว่าอะไรทำให้แก้วนั้นอร่อยหรือพังไป
+ทุก requirement มาจากประสบการณ์จริงของผมเอง ไม่มีทีม ไม่มีลูกค้า มีแค่คนที่อยากชงกาแฟให้ดีขึ้นและอยากเขียนโค้ดเพื่อแก้ปัญหาของตัวเอง
 
-## What's next? How do I make an app with this?
+🔗 **Live Demo:** [dripsync-everydaydrip.vercel.app](https://dripsync-everydaydrip.vercel.app)
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+---
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+## ✨ Features
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+### 🫘 Bean Inventory (คลังเมล็ดกาแฟ)
 
-## Learn More
+- เพิ่ม แก้ไข และลบเมล็ดกาแฟ
+- บันทึกข้อมูลครบถ้วน: ชื่อ, โรงคั่ว, วันที่คั่ว, ระดับการคั่ว, โปรเซส, Taste Notes
+- คำนวณ **ต้นทุนต่อกรัม** อัตโนมัติ
+- ติดตามปริมาณคงเหลือพร้อม progress bar
+- สถานะ: พร้อมใช้ / ใกล้หมด / หมดสต็อก
+- อัปโหลดรูปภาพและครอปได้
+- แสดง Stats ภาพรวม: ปริมาณรวม, ใกล้หมด, หมดสต็อก
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+### 🫗 Brew Log (ประวัติการดริป)
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+- บันทึกการชงกาแฟแต่ละครั้ง
+- รองรับการกรอกข้อมูลพลัว (Pour) พร้อมกรัมและเวลา
+- คำนวณ **น้ำรวม**, **เวลารวม** และ **Ratio** อัตโนมัติจากข้อมูลพลัว
+- บันทึก: โดส, อุณหภูมิน้ำ, เบอร์บด, วิธีดริป, คะแนน, เทสโน้ต
+- ระบบตรวจสอบว่าเมล็ดมีปริมาณเพียงพอก่อนบันทึก
+- Responsive ทั้ง Desktop (Table) และ Mobile (Card)
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+### 🔐 Authentication
 
-## How do I deploy this?
+- Login ด้วย **Google** ผ่าน NextAuth.js
+- ข้อมูลแยกตาม User แต่ละคน
+- Guest สามารถดูข้อมูลได้ แต่ไม่สามารถแก้ไขได้
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+---
+
+## 🛠️ Tech Stack
+
+| Category     | Technology                                                                      |
+| ------------ | ------------------------------------------------------------------------------- |
+| Framework    | [Next.js 15](https://nextjs.org/) (App Router)                                  |
+| API          | [tRPC](https://trpc.io/)                                                        |
+| Database ORM | [Prisma](https://www.prisma.io/)                                                |
+| Database     | [PostgreSQL](https://www.postgresql.org/) via [Supabase](https://supabase.com/) |
+| Styling      | [Tailwind CSS](https://tailwindcss.com/)                                        |
+| Auth         | [NextAuth.js](https://next-auth.js.org/)                                        |
+| Deployment   | [Vercel](https://vercel.com/)                                                   |
+| Language     | TypeScript                                                                      |
+
+> Built with [T3 Stack](https://create.t3.gg/)
+
+---
+
+## 🗄️ Database Schema
+
+```prisma
+model Bean {
+  id         String      @id @default(cuid())
+  name       String
+  roaster    String
+  roastDate  DateTime
+  roastLevel RoastLevel
+  process    ProcessType
+  tasteNotes String?
+  price      Float
+  weight     Float
+  imageUrl   String?
+  isFinished Boolean     @default(false)
+  userId     String
+  brewLogs   BrewLog[]
+}
+
+model BrewLog {
+  id         String   @id @default(cuid())
+  coffeeDose Float
+  waterYield Float
+  waterTemp  Float
+  grindSize  String
+  pours      Int[]
+  pourGrams  Float[]
+  brewTime   Int
+  method     String
+  brewDate   DateTime
+  rating     Int
+  notes      String?
+  beanId     String
+}
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL database (หรือใช้ Supabase)
+
+### Installation
+
+```bash
+# Clone repository
+git clone https://github.com/MrTanapat/DripSync.git
+cd DripSync
+
+# Install dependencies
+npm install
+```
+
+### Environment Variables
+
+สร้างไฟล์ `.env` และใส่ค่าดังนี้:
+
+```env
+# Auth
+AUTH_SECRET="your-auth-secret"
+AUTH_GOOGLE_ID="your-google-client-id"
+AUTH_GOOGLE_SECRET="your-google-client-secret"
+
+# Database
+DATABASE_URL="postgresql://..."
+DIRECT_URL="postgresql://..."
+```
+
+### Run Development Server
+
+```bash
+# Push database schema
+npx prisma db push
+
+# Start dev server
+npm run dev
+```
+
+เปิด [http://localhost:3000](http://localhost:3000) ได้เลยครับ
+
+---
+
+## 📁 Project Structure
+
+```
+src/
+├── app/
+│   ├── _components/
+│   │   ├── Navbar.tsx
+│   │   ├── ProfileModal.tsx
+│   │   └── Section/
+│   │       └── HeroSection.tsx
+│   ├── beans/
+│   │   ├── BeansView.tsx
+│   │   ├── BeanModal.tsx
+│   │   └── page.tsx
+│   ├── brew/
+│   │   ├── BrewView.tsx
+│   │   ├── BrewModal.tsx
+│   │   ├── BrewDetailModal.tsx
+│   │   └── page.tsx
+│   └── page.tsx
+├── server/
+│   └── api/
+│       ├── routers/
+│       │   ├── bean.ts
+│       │   └── brew.ts
+│       └── root.ts
+└── styles/
+    └── globals.css
+```
+
+---
+
+## 👨‍💻 Developer
+
+**0VERT-** — Software Engineering Student, RMUTL
+
+---
+
+## 📝 License
+
+MIT License
