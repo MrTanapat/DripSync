@@ -176,7 +176,3 @@ src/
 **0VERT-** — Software Engineering Student, RMUTL
 
 ---
-
-## 📝 License
-
-MIT License
