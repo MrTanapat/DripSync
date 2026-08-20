@@ -11,7 +11,7 @@ export default function HeroSection() {
 
     return (
         <div className="bg-white">
-            <div className="relative isolate px-6 pt-14 lg:px-8">
+            <div className="relative isolate px-6 pt-28 lg:px-8">
                 {/* Blur blob top */}
                 <div
                     aria-hidden="true"
@@ -27,10 +27,10 @@ export default function HeroSection() {
                 </div>
 
                 {/* Content */}
-                <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
+                <div className="mx-auto max-w-2xl px-6 pt-6 lg:px-6">
                     {/* Badge */}
                     <div className="hidden sm:mb-8 sm:flex sm:justify-center">
-                        <div className="relative rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-sm text-stone-500">
+                        <div className="relative rounded-full border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500">
                             เริ่มต้นดริปกาแฟได้เลย{" "}
                             <Link href="/brew" className="font-semibold text-amber-600">
                                 <span aria-hidden="true" className="absolute inset-0" />
@@ -65,7 +65,7 @@ export default function HeroSection() {
                         </div>
 
                         {/* Stats cards */}
-                        <div className="mt-16 grid grid-cols-2 gap-3 border-t border-stone-100 pt-10 sm:grid-cols-4">
+                        <div className="mt-10 grid grid-cols-2 gap-3 border-t border-stone-100 pt-8 sm:grid-cols-4">
                             {[
                                 {
                                     icon: <Package className="h-5 w-5" />,
