@@ -4,22 +4,23 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "~/trpc/react";
 import type { RouterOutputs } from "~/trpc/react";
 import ImageCropModal from "./ImageCropModal";
+import Image from "next/image";
 
 type Bean = RouterOutputs["bean"]["getAll"][number];
 
 const ROAST_LEVELS = [
-  { value: "LIGHT",       label: "Light (อ่อน)" },
-  { value: "MEDIUM",      label: "Medium (กลาง)" },
+  { value: "LIGHT", label: "Light (อ่อน)" },
+  { value: "MEDIUM", label: "Medium (กลาง)" },
   { value: "MEDIUM_DARK", label: "Medium Dark (กลางเข้ม)" },
-  { value: "DARK",        label: "Dark (เข้ม)" },
+  { value: "DARK", label: "Dark (เข้ม)" },
 ] as const;
 
 const PROCESSES = [
-  { value: "WASHED",    label: "Washed" },
-  { value: "NATURAL",   label: "Natural" },
-  { value: "HONEY",     label: "Honey" },
+  { value: "WASHED", label: "Washed" },
+  { value: "NATURAL", label: "Natural" },
+  { value: "HONEY", label: "Honey" },
   { value: "ANAEROBIC", label: "Anaerobic" },
-  { value: "OTHER",     label: "Other" },
+  { value: "OTHER", label: "Other" },
 ] as const;
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
@@ -46,29 +47,29 @@ type FormState = {
 
 function emptyForm(): FormState {
   return {
-    name:       "",
-    roaster:    "",
-    roastDate:  todayISO(),
+    name: "",
+    roaster: "",
+    roastDate: todayISO(),
     roastLevel: "MEDIUM",
-    process:    "WASHED",
+    process: "WASHED",
     tasteNotes: "",
-    weight:     "",
-    price:      "",
-    imageUrl:   "",
+    weight: "",
+    price: "",
+    imageUrl: "",
   };
 }
 
 function formFromBean(bean: Bean): FormState {
   return {
-    name:       bean.name,
-    roaster:    bean.roaster,
-    roastDate:  toDateInputValue(bean.roastDate),
+    name: bean.name,
+    roaster: bean.roaster,
+    roastDate: toDateInputValue(bean.roastDate),
     roastLevel: bean.roastLevel,
-    process:    bean.process,
+    process: bean.process,
     tasteNotes: bean.tasteNotes ?? "",
-    weight:     String(bean.weight),
-    price:      String(bean.price),
-    imageUrl:   bean.imageUrl ?? "",
+    weight: String(bean.weight),
+    price: String(bean.price),
+    imageUrl: bean.imageUrl ?? "",
   };
 }
 
@@ -143,15 +144,15 @@ export default function BeanModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const data = {
-      name:       form.name,
-      roaster:    form.roaster,
-      roastDate:  new Date(form.roastDate),
+      name: form.name,
+      roaster: form.roaster,
+      roastDate: new Date(form.roastDate),
       roastLevel: form.roastLevel,
-      process:    form.process,
+      process: form.process,
       tasteNotes: form.tasteNotes || undefined,
-      weight:     Number(form.weight),
-      price:      Number(form.price),
-      imageUrl:   form.imageUrl || undefined,
+      weight: Number(form.weight),
+      price: Number(form.price),
+      imageUrl: form.imageUrl || undefined,
     };
 
     if (isEdit && bean) {
@@ -189,9 +190,11 @@ export default function BeanModal({
             <label className="mb-1 block text-sm font-medium text-coffee-700">รูปภาพ (ไม่บังคับ)</label>
             <div className="relative">
               {form.imageUrl ? (
-                <img
+                <Image
                   src={form.imageUrl}
                   alt=""
+                  width={400}
+                  height={128}
                   className="h-32 w-full rounded-lg border border-coffee-100 object-cover"
                 />
               ) : (

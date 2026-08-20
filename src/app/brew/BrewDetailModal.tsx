@@ -40,9 +40,10 @@ export default function BrewDetailModal({
     }, [onClose]);
 
     const hasPourGrams = Array.isArray(log.pourGrams) && log.pourGrams.length > 0;
-    const totalWater = hasPourGrams
-        ? (log.pourGrams as number[]).reduce((sum, g) => sum + g, 0)
-        : log.waterYield;
+    const totalWater =
+        log.pourGrams && log.pourGrams.length > 0
+            ? log.pourGrams.reduce((sum, g) => sum + g, 0)
+            : log.waterYield;
 
     const ratio = totalWater / log.coffeeDose;
 
@@ -142,7 +143,7 @@ export default function BrewDetailModal({
                 {log.notes && (
                     <div className="mb-5 rounded-xl border border-stone-100 bg-stone-50 p-4">
                         <p className="text-xs font-medium text-stone-400">เทสโน้ต</p>
-                        <p className="mt-1 text-sm italic text-stone-600">"{log.notes}"</p>
+                        <p className="mt-1 text-sm italic text-stone-600">&quot;{log.notes}&quot;</p>
                     </div>
                 )}
 
