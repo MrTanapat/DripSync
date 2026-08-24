@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { api } from "~/trpc/react";
 import type { RouterOutputs } from "~/trpc/react";
 import BeanModal from "./BeanModal";
 import { Pencil, Trash2 } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 
 type BeanItem = RouterOutputs["bean"]["getAll"][number];
+type sortKey = "createdAt" | "name" | "process" | "roastLevel" | "weight" | "isFinished";
+type sortOrder = "asc" | "desc";
+
+const SORT_OPTIONS: { value: sortKey; label: string }[] = [
+  { value: "createdAt", label: "วันที่เพิ่ม" },
+  { value: "name", label: "ชื่อ" },
+  { value: "process", label: "โปรเซส" },
+  { value: "roastLevel", label: "ระดับคั่ว" },
+  { value: "weight", label: "ปริมาณคงเหลือ" },
+  { value: "isFinished", label: "สถานะ" },
+];
 
 const ROAST_LABEL: Record<string, string> = {
   LIGHT: "Light",
@@ -32,6 +44,40 @@ export default function BeansView() {
   const [modalState, setModalState] = useState<
     { open: false } | { open: true; bean: BeanItem | null }
   >({ open: false });
+  const [sortKey, setSortKey] = useState<sortKey>("createdAt");
+  const [sortOrder, setSortOrder] = useState<sortOrder>("desc");
+
+  const sortedBeans = useMemo(() => {
+    if (!beans) return [];
+    const list = [...beans];
+
+    list.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case "name":
+          cmp = a.name.localeCompare(b.name, "th");
+          break;
+        case "process":
+          cmp = a.process.localeCompare(b.process);
+          break;
+        case "roastLevel":
+          cmp = a.roastLevel.localeCompare(b.roastLevel);
+          break;
+        case "weight":
+          cmp = a.weight - b.weight;
+          break;
+        case "isFinished":
+          cmp = Number(a.isFinished) - Number(b.isFinished);
+          break;
+        case "createdAt":
+          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+      return sortOrder === "asc" ? cmp : -cmp;
+    });
+
+    return list;
+  }, [beans, sortKey, sortOrder]);
 
   const deleteBean = api.bean.delete.useMutation({
     onSuccess: () => void refetch(),
@@ -109,6 +155,22 @@ export default function BeansView() {
         </div>
       )}
 
+      {/* Sort controls */}
+      {beans && beans.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+          <span className="text-sm text-stone-400">เรียงตาม</span>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as sortKey)}
+            className="rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Empty state */}
       {!beans || beans.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-stone-200 py-16 text-center text-stone-400">
@@ -126,15 +188,15 @@ export default function BeansView() {
                 <span key={h} className="text-xs font-medium text-stone-400">{h}</span>
               ))}
             </div>
-            {beans.map((bean) => {
+            {sortedBeans.map((bean) => {
               const status = getStockStatus(bean);
               const pct = Math.min((bean.weight / 1000) * 100, 100);
               const barColor =
                 bean.isFinished || bean.weight <= 0
                   ? "bg-red-400"
                   : bean.weight < 50
-                  ? "bg-amber-400"
-                  : "bg-green-500";
+                    ? "bg-amber-400"
+                    : "bg-green-500";
 
               return (
                 <div
@@ -190,15 +252,15 @@ export default function BeansView() {
 
           {/* Mobile — Cards */}
           <div className="flex flex-col gap-3 md:hidden">
-            {beans.map((bean) => {
+            {sortedBeans.map((bean) => {
               const status = getStockStatus(bean);
               const pct = Math.min((bean.weight / 1000) * 100, 100);
               const barColor =
                 bean.isFinished || bean.weight <= 0
                   ? "bg-red-400"
                   : bean.weight < 50
-                  ? "bg-amber-400"
-                  : "bg-green-500";
+                    ? "bg-amber-400"
+                    : "bg-green-500";
 
               return (
                 <div
