@@ -6,6 +6,7 @@ import { api } from "~/trpc/react";
 import type { RouterOutputs } from "~/trpc/react";
 import BeanModal from "./BeanModal";
 import { Pencil, Trash2 } from "lucide-react";
+import { getFreshness, daysSinceRoast } from "~/lib/bean.utils";
 
 type BeanItem = RouterOutputs["bean"]["getAll"][number];
 type sortKey = "createdAt" | "name" | "process" | "roastLevel" | "weight" | "isFinished";
@@ -19,6 +20,13 @@ const SORT_OPTIONS: { value: sortKey; label: string }[] = [
   { value: "weight", label: "ปริมาณคงเหลือ" },
   { value: "isFinished", label: "สถานะ" },
 ];
+
+const FRESHNESS_CONFIG = {
+  resting: { label: "รอดีแก๊ส", bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-500" },
+  peak: { label: "พร้อมใช้", bg: "bg-green-50", text: "text-green-600", dot: "bg-green-500" },
+  good: { label: "กำลังดี", bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-500" },
+  stale: { label: "เริ่มเก่า", bg: "bg-stone-100", text: "text-stone-500", dot: "bg-stone-400" },
+} as const;
 
 const ROAST_LABEL: Record<string, string> = {
   LIGHT: "Light",
@@ -187,9 +195,12 @@ export default function BeansView() {
                 <span key={h} className="text-xs font-medium text-stone-400">{h}</span>
               ))}
             </div>
+
             {sortedBeans.map((bean) => {
               const status = getStockStatus(bean);
-              const pct = Math.min((bean.weight / 1000) * 100, 100);
+              const pct = bean.initialWeight > 0
+                ? Math.min((bean.weight / bean.initialWeight) * 100, 100)
+                : 0;
               const barColor =
                 bean.isFinished || bean.weight <= 0
                   ? "bg-red-400"
@@ -204,7 +215,17 @@ export default function BeansView() {
                 >
                   <div>
                     <p className="font-semibold text-stone-900">{bean.name}</p>
-                    <p className="text-xs text-stone-400">{bean.roaster}</p>
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <p className="text-xs text-stone-400">{bean.roaster}</p>
+                      {(() => {
+                        const f = FRESHNESS_CONFIG[getFreshness(bean.roastDate)];
+                        return (
+                          <span className={`rounded-full ${f.bg} px-1.5 py-0.5 text-[10px] font-medium ${f.text}`}>
+                            {f.label} · {daysSinceRoast(bean.roastDate)}d
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </div>
                   <span className="text-sm text-stone-500">{ORIGIN_LABEL[bean.process]}</span>
                   <span className="text-sm text-stone-500">{ROAST_LABEL[bean.roastLevel]}</span>
@@ -253,7 +274,9 @@ export default function BeansView() {
           <div className="flex flex-col gap-3 md:hidden">
             {sortedBeans.map((bean) => {
               const status = getStockStatus(bean);
-              const pct = Math.min((bean.weight / 1000) * 100, 100);
+              const pct = bean.initialWeight > 0
+                ? Math.min((bean.weight / bean.initialWeight) * 100, 100)
+                : 0;
               const barColor =
                 bean.isFinished || bean.weight <= 0
                   ? "bg-red-400"
@@ -269,8 +292,20 @@ export default function BeansView() {
                   {/* Top */}
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-stone-900">{bean.name}</p>
-                      <p className="text-xs text-stone-400">{bean.roaster}</p>
+                      <div>
+                        <p className="font-semibold text-stone-900">{bean.name}</p>
+                        <div className="mt-0.5 flex items-center gap-2">
+                          <p className="text-xs text-stone-400">{bean.roaster}</p>
+                          {(() => {
+                            const f = FRESHNESS_CONFIG[getFreshness(bean.roastDate)];
+                            return (
+                              <span className={`rounded-full ${f.bg} px-1.5 py-0.5 text-[10px] font-medium ${f.text}`}>
+                                {f.label} · {daysSinceRoast(bean.roastDate)}d
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </div>
                     </div>
                     <div className="ml-3 flex items-center gap-1.5 shrink-0">
                       <span className={`h-2 w-2 rounded-full ${status.dot}`} />

@@ -42,10 +42,10 @@ export const beanRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.bean.create({
-        data: { ...input, userId: ctx.session.user.id },
-      });
-    }),
+  return ctx.db.bean.create({
+    data: { ...input, initialWeight: input.weight, userId: ctx.session.user.id },
+  });
+}),
 
   update: protectedProcedure
     .input(

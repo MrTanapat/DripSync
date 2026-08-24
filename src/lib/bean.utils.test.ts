@@ -7,6 +7,8 @@ import {
   secondsToDisplay,
 } from "./bean.utils";
 
+import { daysSinceRoast, getFreshness } from "./bean.utils";
+
 describe("calcCostPerGram", () => {
   it("returns correct cost per gram", () => {
     expect(calcCostPerGram(500, 250)).toBe(2);
@@ -78,5 +80,41 @@ describe("secondsToDisplay", () => {
 
   it("converts 180 seconds to 3:00", () => {
     expect(secondsToDisplay(180)).toBe("3:00");
+  });
+});
+
+describe("daysSinceRoast", () => {
+  it("returns 0 for a bean roasted today", () => {
+    expect(daysSinceRoast(new Date())).toBe(0);
+  });
+
+  it("returns 7 for a bean roasted a week ago", () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    expect(daysSinceRoast(d)).toBe(7);
+  });
+});
+
+describe("getFreshness", () => {
+  function daysAgo(n: number) {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return d;
+  }
+
+  it("returns resting within 3 days of roasting", () => {
+    expect(getFreshness(daysAgo(2))).toBe("resting");
+  });
+
+  it("returns peak between 4 and 14 days", () => {
+    expect(getFreshness(daysAgo(10))).toBe("peak");
+  });
+
+  it("returns good between 15 and 34 days", () => {
+    expect(getFreshness(daysAgo(20))).toBe("good");
+  });
+
+  it("returns stale at 35 days or more", () => {
+    expect(getFreshness(daysAgo(40))).toBe("stale");
   });
 });
