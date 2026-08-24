@@ -51,13 +51,13 @@ export default function HeroSection() {
                         {/* CTA */}
                         <div className="mt-10 flex items-center justify-center gap-x-4">
                             <Link
-                                href={session ? "/brew" : "/api/auth/signin"}
+                                href="/brew"
                                 className="rounded-full bg-amber-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-400"
                             >
                                 เริ่มดริปกาแฟ
                             </Link>
                             <Link
-                                href={session ? "/beans" : "/api/auth/signin"}
+                                href="/beans"
                                 className="text-sm font-semibold text-stone-600 hover:text-stone-900"
                             >
                                 ดูคลังเมล็ด <span aria-hidden="true">{"→"}</span>

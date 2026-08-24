@@ -64,7 +64,7 @@ export default function Navbar() {
                   : "text-stone-600 hover:bg-white/70 hover:text-stone-900 hover:shadow-sm"
                   }`}
               >
-                ประวัติการดริป
+                การดริป
               </Link>
             </nav>
 
@@ -164,7 +164,7 @@ export default function Navbar() {
                     className={`rounded-full px-3 py-2.5 text-sm font-medium transition-colors ${isBrewActive ? "bg-amber-600 text-white" : "text-stone-600 hover:bg-white/60 hover:text-stone-900"
                       }`}
                   >
-                    ประวัติการดริป
+                    การดริป
                   </Link>
                   {session ? (
                     <>

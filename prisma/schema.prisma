@@ -24,20 +24,20 @@ enum ProcessType {
 }
 
 model Bean {
-    id         String      @id @default(cuid())
-    name       String
-    roaster    String
-    roastDate  DateTime
-    roastLevel RoastLevel
-    process    ProcessType
-    tasteNotes String?
-    price      Float
-    weight     Float
-    imageUrl   String?
-    isFinished Boolean     @default(false)
-    brewLogs   BrewLog[]
+    id            String      @id @default(cuid())
+    name          String
+    roaster       String
+    roastDate     DateTime
+    roastLevel    RoastLevel
+    process       ProcessType
+    tasteNotes    String?
+    price         Float
+    weight        Float
+    imageUrl      String?
+    isFinished    Boolean     @default(false)
+    brewLogs      BrewLog[]
+    initialWeight Float
 
-    // เพิ่มตรงนี้
     userId String
     user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 

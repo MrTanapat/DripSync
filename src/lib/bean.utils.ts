@@ -28,3 +28,20 @@ export function secondsToDisplay(seconds: number): string {
   const s = seconds % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
 }
+
+export type FreshnessLevel = "resting" | "peak" | "good" | "stale";
+
+export function daysSinceRoast(roastDate: Date | string): number {
+  const roast = new Date(roastDate);
+  const now = new Date();
+  const diff = now.getTime() - roast.getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
+
+export function getFreshness(roastDate: Date | string): FreshnessLevel {
+  const days = daysSinceRoast(roastDate);
+  if (days <= 3) return "resting";
+  if (days <= 14) return "peak";
+  if (days < 35) return "good";
+  return "stale";
+}
