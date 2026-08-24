@@ -6,7 +6,6 @@ import { api } from "~/trpc/react";
 import type { RouterOutputs } from "~/trpc/react";
 import BeanModal from "./BeanModal";
 import { Pencil, Trash2 } from "lucide-react";
-import { ArrowUpDown } from "lucide-react";
 
 type BeanItem = RouterOutputs["bean"]["getAll"][number];
 type sortKey = "createdAt" | "name" | "process" | "roastLevel" | "weight" | "isFinished";

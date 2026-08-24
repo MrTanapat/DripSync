@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { api } from "~/trpc/react";
 import type { RouterOutputs } from "~/trpc/react";
@@ -9,6 +9,49 @@ import BrewDetailModal from "./BrewDetailModal";
 import { Pencil, Trash2 } from "lucide-react";
 
 type BrewLog = RouterOutputs["brew"]["getAll"][number];
+type sortKey = "brewDate" | "bean.name" | "method" | "coffeeDose" | "waterYield" | "brewTime" | "rating";
+type sortOrder = "asc" | "desc";
+
+const SORT_OPTIONS: { value: sortKey; label: string }[] = [
+  { value: "brewDate", label: "วันที่ชง" },
+  { value: "bean.name", label: "ชื่อเมล็ดกาแฟ" },
+  { value: "method", label: "วิธี" },
+  { value: "coffeeDose", label: "โดส" },
+  { value: "waterYield", label: "น้ำ" },
+  { value: "brewTime", label: "เวลา" },
+  { value: "rating", label: "คะแนน" },
+];
+
+
+const sortBrewLogs = (logs: BrewLog[], key: sortKey, order: sortOrder) => {
+  return [...logs].sort((a, b) => {
+    let cmp = 0;
+    switch (key) {
+      case "brewDate":
+        cmp = new Date(a.brewDate).getTime() - new Date(b.brewDate).getTime();
+        break;
+      case "bean.name":
+        cmp = a.bean.name.localeCompare(b.bean.name, "th");
+        break;
+      case "method":
+        cmp = a.method.localeCompare(b.method);
+        break;
+      case "coffeeDose":
+        cmp = a.coffeeDose - b.coffeeDose;
+        break;
+      case "waterYield":
+        cmp = a.waterYield - b.waterYield;
+        break;
+      case "brewTime":
+        cmp = a.brewTime - b.brewTime;
+        break;
+      case "rating":
+        cmp = a.rating - b.rating;
+        break;
+    }
+    return order === "asc" ? cmp : -cmp;
+  });
+};
 
 function formatBrewDate(date: Date) {
   return new Date(date).toLocaleDateString("th-TH", {
@@ -31,6 +74,13 @@ export default function BrewView() {
     { open: false } | { open: true; log: BrewLog | null }
   >({ open: false });
   const [detailLog, setDetailLog] = useState<BrewLog | null>(null);
+  const [sortKey, setSortKey] = useState<sortKey>("brewDate");
+  const [sortOrder, setSortOrder] = useState<sortOrder>("desc");
+
+  const sortedLogs = useMemo(
+    () => (brewLogs ? sortBrewLogs(brewLogs, sortKey, sortOrder) : []),
+    [brewLogs, sortKey, sortOrder]
+  );
 
   const deleteBrew = api.brew.delete.useMutation({
     onSuccess: () => void refetch(),
@@ -72,6 +122,20 @@ export default function BrewView() {
         )}
       </div>
 
+      {brewLogs && brewLogs.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+          <span className="text-sm text-stone-400">เรียงตาม</span>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as sortKey)}
+            className="rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
       {/* Empty state */}
       {!brewLogs || brewLogs.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-stone-200 py-16 text-center text-stone-400">
@@ -91,7 +155,7 @@ export default function BrewView() {
                 <span key={h} className="text-xs font-medium text-stone-400">{h}</span>
               ))}
             </div>
-            {brewLogs.map((log) => (
+            {sortedLogs.map((log) => (
               <div
                 key={log.id}
                 onClick={() => setDetailLog(log)}
@@ -138,7 +202,7 @@ export default function BrewView() {
 
           {/* Mobile — Cards */}
           <div className="flex flex-col gap-3 md:hidden">
-            {brewLogs.map((log) => (
+            {sortedLogs.map((log) => (
               <div
                 key={log.id}
                 onClick={() => setDetailLog(log)}
