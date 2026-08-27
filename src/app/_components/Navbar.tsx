@@ -6,6 +6,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import ProfileModal from "./ProfileModal";
 
+
 export default function Navbar() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
@@ -16,6 +17,7 @@ export default function Navbar() {
 
   const isBeansActive = pathname?.startsWith("/beans");
   const isBrewActive = pathname?.startsWith("/brew");
+  const isTimerActive = pathname?.startsWith("/timer");
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -64,7 +66,18 @@ export default function Navbar() {
                   : "text-stone-600 hover:bg-white/70 hover:text-stone-900 hover:shadow-sm"
                   }`}
               >
-                การดริป
+                ประวัติการดริป
+              </Link>
+
+              <Link
+                href="/timer"
+                aria-current={isTimerActive ? "page" : undefined}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${isTimerActive
+                  ? "bg-amber-600 text-white shadow-sm"
+                  : "text-stone-600 hover:bg-white/70 hover:text-stone-900 hover:shadow-sm"
+                  }`}
+              >
+                ดริปกาแฟ
               </Link>
             </nav>
 
@@ -164,7 +177,18 @@ export default function Navbar() {
                     className={`rounded-full px-3 py-2.5 text-sm font-medium transition-colors ${isBrewActive ? "bg-amber-600 text-white" : "text-stone-600 hover:bg-white/60 hover:text-stone-900"
                       }`}
                   >
-                    การดริป
+                    ประวัติการดริป
+                  </Link>
+
+                  <Link
+                    href="/timer"
+                    onClick={closeMenu}
+                    className={`rounded-full px-3 py-2.5 text-sm font-medium transition-colors ${isTimerActive
+                      ? "bg-amber-600 text-white"
+                      : "text-stone-600 hover:bg-white/60 hover:text-stone-900"
+                      }`}
+                  >
+                    ดริปกาแฟ
                   </Link>
                   {session ? (
                     <>
